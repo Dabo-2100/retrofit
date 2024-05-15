@@ -5,8 +5,8 @@ $endpoints = [
     '/api/auth/login' => 'auth_login',
     '/api/auth/activate' => 'user_activate',
     '/api/auth/resendcode' => 'resend_code',
+
     '/api/users/authority' => 'get_apps',
-    
     '/api/users' => 'users_read',
     '/api/users/store' => 'users_store',
 
@@ -24,9 +24,18 @@ $endpoints = [
     '/api/aircrafts/\d+/forms' => 'aircraft_forms',
 
     '/api/forms/\d+/logs' => 'form_logs',
-
     '/api/forms/\d+' => 'index_forms',
+
     '/api/applicability/\d+' => 'applicability_details',
+
+    '/api/warehouse/products' => 'search_products',
+    '/api/warehouse/products/store' => 'store_product',
+    '/api/warehouse/products/qty/\d+' => 'detailed_qty',
+    '/api/warehouse/products/store' => 'store_product',
+
+    '/api/warehouse/units/\d+' => 'index_units',
+
+    '/upload/files/items' => 'upload_items',
 ];
 
 $match = 0;

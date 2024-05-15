@@ -203,12 +203,104 @@ $statements = [
         inspector_id        INT,
         FOREIGN KEY (inspector_id) REFERENCES app_users(user_id),
         insection_date      DATE,
-        work_required   VARCHAR(255) NOT NULL,
-        action_taken    VARCHAR(255) NOT NULL,
-        is_active       BOOLEAN DEFAULT TRUE,
-        created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        last_update     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        work_required       VARCHAR(255) NOT NULL,
+        action_taken        VARCHAR(255) NOT NULL,
+        is_active           BOOLEAN DEFAULT TRUE,
+        created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_update         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         UNIQUE (parent_form_id)
+    )',
+
+    'CREATE TABLE IF NOT EXISTS app_warehouses( 
+        warehouse_id        INT(20) AUTO_INCREMENT PRIMARY KEY,
+        warehouse_name      VARCHAR(255),
+        is_active           BOOLEAN DEFAULT TRUE,
+        created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_update         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE (warehouse_name)
+    )',
+
+    'CREATE TABLE IF NOT EXISTS warehouse_category( 
+        category_id         INT(20) AUTO_INCREMENT PRIMARY KEY,
+        category_name       VARCHAR(255),
+        warehouse_id        INT,
+        FOREIGN KEY (warehouse_id) REFERENCES app_warehouses(warehouse_id),
+        is_active           BOOLEAN DEFAULT TRUE,
+        created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_update         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE (category_name)
+    )',
+
+    'CREATE TABLE IF NOT EXISTS warehouse_units( 
+        unit_id             INT(20) AUTO_INCREMENT PRIMARY KEY,
+        unit_name           VARCHAR(255),
+        parent_unit_id      INT,
+        FOREIGN KEY (parent_unit_id) REFERENCES warehouse_units(unit_id),
+        warehouse_id      INT,
+        FOREIGN KEY (warehouse_id) REFERENCES app_warehouses(warehouse_id),
+        qty_in_parent_unit  INT,
+        is_active           BOOLEAN DEFAULT TRUE,
+        created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_update         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE (unit_name)
+    )',
+
+    'CREATE TABLE IF NOT EXISTS warehouse_locations( 
+        location_id         INT(20) AUTO_INCREMENT PRIMARY KEY,
+        location_name       VARCHAR(255),
+        warehouse_id        INT,
+        FOREIGN KEY (warehouse_id) REFERENCES app_warehouses(warehouse_id),
+        is_active           BOOLEAN DEFAULT TRUE,
+        created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_update         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE (location_name,warehouse_id)
+    )',
+
+    'CREATE TABLE IF NOT EXISTS warehouse_products( 
+        product_id        INT(20) AUTO_INCREMENT PRIMARY KEY,
+        product_pn        VARCHAR(255),
+        product_name      VARCHAR(255),
+        product_usa_pn    VARCHAR(255),
+        category_id       INT,
+        FOREIGN KEY (category_id) REFERENCES warehouse_category(category_id),
+        warehouse_id       INT,
+        FOREIGN KEY (warehouse_id) REFERENCES app_warehouses(warehouse_id),
+        is_active         BOOLEAN DEFAULT TRUE,
+        created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_update       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE (product_pn)
+    )',
+
+    'CREATE TABLE IF NOT EXISTS warehouse_products_qty( 
+        qty_id              INT(20) AUTO_INCREMENT PRIMARY KEY,
+        product_id          INT,
+        FOREIGN KEY (product_id) REFERENCES warehouse_products(product_id),
+        unit_id             INT,
+        FOREIGN KEY (unit_id) REFERENCES warehouse_units(unit_id),
+        location_id         INT,
+        FOREIGN KEY (location_id) REFERENCES warehouse_locations(location_id),
+        aircraft_id         INT,
+        FOREIGN KEY (aircraft_id) REFERENCES aircrafts(aircraft_id),
+        qty_value           FLOAT,
+        is_active           BOOLEAN DEFAULT TRUE,
+        created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_update         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )',
+
+    'CREATE TABLE IF NOT EXISTS warehouse_qty_logs( 
+        log_id              INT(20) AUTO_INCREMENT PRIMARY KEY,
+        qty_id              INT,
+        FOREIGN KEY (qty_id) REFERENCES warehouse_products_qty(qty_id),
+        user_id             INT,
+        FOREIGN KEY (user_id) REFERENCES app_users(user_id),
+        log_value           FLOAT,
+        log_type            VARCHAR(255),
+        log_reason          VARCHAR(255),
+        packing_list        VARCHAR(255),
+        log_date            DATE NOT NULL,
+        is_active           BOOLEAN DEFAULT TRUE,
+        created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_update         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )',
 
     // 'CREATE TABLE IF NOT EXISTS logs_3( 
@@ -244,3 +336,62 @@ $statements = [
 foreach ($statements as $statement) {
     $pdo->exec($statement);
 }
+
+
+
+// '
+// BEGIN
+// DECLARE aircraft_id_var INT;
+// DECLARE last_order_var INT;
+// DECLARE new_id_var INT;
+// -- Query aircraft_id into variable
+// SELECT aircraft_id INTO aircraft_id_var FROM app_forms WHERE form_id = NEW.form_id;
+
+// -- Query max form_order into variable
+// SELECT MAX(form_order) INTO last_order_var FROM app_forms WHERE form_type_id = 2 AND aircraft_id = aircraft_id_var;
+
+// -- Insert into app_forms
+// INSERT INTO app_forms (form_order, form_parent_id, form_type_id, aircraft_id, form_date)
+// VALUES (last_order_var + 1, NEW.form_id, 2, aircraft_id_var, NEW.log_date);
+
+// -- Get the last inserted ID
+// SET new_id_var = LAST_INSERT_ID();
+// SET New.1002_id = new_id_var;
+// END
+// '
+
+// '
+//     DELIMITER //
+//     CREATE TRIGGER change_product_qty
+//         BEFORE INSERT
+//         ON warehouse_qty_logs
+//         FOR EACH ROW
+//     BEGIN
+//         -- Define Vars
+//         DECLARE var_log_value FLOAT;
+//         DECLARE var_qty_id INT;
+//         DECLARE var_log_type VARCHAR(255); -- Specify the length
+//         DECLARE var_old_qty FLOAT;
+//         DECLARE var_new_qty FLOAT;
+
+//         -- Assign Values
+//         SET var_log_value = New.log_value;
+//         SET var_qty_id = New.qty_id;
+//         SET var_log_type = New.log_type;
+
+//         -- Query Old Value into var_old_qty
+//         SELECT qty_value INTO var_old_qty FROM warehouse_products_qty WHERE qty_id = var_qty_id;
+//         SET var_new_qty = var_old_qty + var_log_value;
+//         SET New.log_before_qty = var_old_qty;
+
+//         -- Update warehouse_products_qty if var_new_qty is >= 0
+//         IF var_new_qty >= 0 THEN
+//             UPDATE warehouse_products_qty SET qty_value = var_new_qty WHERE qty_id = var_qty_id;
+//         ELSE 
+//             SET New.is_active = 0;
+//         END IF;
+        
+//     END;
+//     //
+//     DELIMITER ;
+// '
