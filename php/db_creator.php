@@ -21,7 +21,6 @@ $statements = [
         created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_update       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )',
-
     'INSERT IGNORE INTO app_roles (role_id,role_name) VALUES (1,"super"),(2,"admin"),(3,"user")',
 
     'CREATE TABLE IF NOT EXISTS app_apps( 
@@ -32,7 +31,6 @@ $statements = [
         created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_update       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )',
-
     'INSERT IGNORE INTO app_apps 
         (app_id,app_name,app_is_active) VALUES 
         (1,"Warehouse",1),
@@ -303,6 +301,53 @@ $statements = [
         last_update         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )',
 
+
+    'CREATE TABLE IF NOT EXISTS connector_types( 
+        type_id             INT(20) AUTO_INCREMENT PRIMARY KEY,
+        type_name           VARCHAR(255),
+        created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_update         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE (type_name)
+    )',
+
+    'INSERT IGNORE INTO connector_types 
+        (type_id,type_name) VALUES 
+        (1,"Cable Assembly"),
+        (2,"Bus Terminator"),
+        (3,"CB"),
+        (4,"Connector"),
+        (5,"Data Bus"),
+        (6,"Diode"),
+        (7,"Ground Stud"),
+        (8,"Junction"),
+        (9,"Plugin"),
+        (10,"Relay Socket"),
+        (11,"Splice"),
+        (12,"Switch"),
+        (13,"Terminal Board"),
+        (14,"Wire")
+    ',
+
+    'CREATE TABLE IF NOT EXISTS app_connectors( 
+        connector_id        INT(20) AUTO_INCREMENT PRIMARY KEY,
+        connector_name      VARCHAR(255),
+        type_id             INT,
+        FOREIGN KEY (type_id) REFERENCES connector_types(type_id),
+        created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_update         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE (connector_name)
+    )',
+
+    'CREATE TABLE IF NOT EXISTS connectors_vs_tasks( 
+        log_id              INT(20) AUTO_INCREMENT PRIMARY KEY,
+        connector_id        INT,
+        FOREIGN KEY (connector_id) REFERENCES app_connectors(connector_id),
+        task_id             INT,
+        FOREIGN KEY (task_id) REFERENCES sb_tasks(task_id),
+        created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_update         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )',
+
     // 'CREATE TABLE IF NOT EXISTS logs_3( 
     //     log_id              INT(20) AUTO_INCREMENT PRIMARY KEY,
     //     parent_form_id      INT,
@@ -336,8 +381,6 @@ $statements = [
 foreach ($statements as $statement) {
     $pdo->exec($statement);
 }
-
-
 
 // '
 // BEGIN
