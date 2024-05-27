@@ -5,28 +5,43 @@ $endpoints = [
     '/api/auth/login' => 'auth_login',
     '/api/auth/activate' => 'user_activate',
     '/api/auth/resendcode' => 'resend_code',
+
     '/api/users/authority' => 'get_apps',
     '/api/users' => 'users_read',
     '/api/users/store' => 'users_store',
+
     '/api/update' => 'update_data',
     '/api/insert' => 'insert_data',
+
     '/api/sbs' => 'index_sbs',
     '/api/sbs/\d+' => 'sb_details',
     '/api/sb_parts' => 'index_sb_parts',
     '/api/sb_parts/\d+' => 'sb_parts_details',
+
     '/api/aircrafts' => 'index_aircrafts',
     '/api/aircrafts/\d+' => 'aircrafts_details',
     '/api/aircrafts/\d+/forms' => 'aircraft_forms',
+    '/api/aircrafts/\d+/connectors' => 'aircraft_connectors',
+
+    '/api/aircrafts/\d+/connectors/store' => 'store_aircraft_connector',
+    
     '/api/forms/\d+/logs' => 'form_logs',
     '/api/forms/\d+' => 'index_forms',
+
     '/api/applicability/\d+' => 'applicability_details',
+
     '/api/warehouse/products' => 'search_products',
     '/api/warehouse/products/store' => 'store_product',
     '/api/warehouse/products/qty/\d+' => 'detailed_qty',
     '/api/warehouse/products/store' => 'store_product',
     '/api/warehouse/units/\d+' => 'index_units',
+
+    '/api/connectors' => 'index_connectors',
     '/api/connectors/search' => 'search_connectors',
+
+
     '/upload/files/items' => 'upload_items',
+
 ];
 
 $match = 0;

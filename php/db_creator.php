@@ -348,6 +348,18 @@ $statements = [
         last_update         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )',
 
+    'CREATE TABLE IF NOT EXISTS connectors_vs_aircrafts( 
+        log_id              INT(20) AUTO_INCREMENT PRIMARY KEY,
+        connector_id        INT,
+        FOREIGN KEY (connector_id) REFERENCES app_connectors(connector_id),
+        aircraft_id         INT,
+        FOREIGN KEY (aircraft_id) REFERENCES aircrafts(aircraft_id),
+        is_open             BOOLEAN DEFAULT FALSE,
+        is_orignal          BOOLEAN DEFAULT TRUE,
+        created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_update         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )',
+
     // 'CREATE TABLE IF NOT EXISTS logs_3( 
     //     log_id              INT(20) AUTO_INCREMENT PRIMARY KEY,
     //     parent_form_id      INT,
