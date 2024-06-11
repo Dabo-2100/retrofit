@@ -1,17 +1,17 @@
 <?php
-require __DIR__ . '/vendor/autoload.php'; // Include Composer's autoloader
+// require __DIR__ . '/vendor/autoload.php'; // Include Composer's autoloader
+require_once './vendor/autoload.php';
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
-function setToken($payload)
+function createToken($payload)
 {
     $key = 'Dabo2100@IPACO';
     $token = JWT::encode($payload, $key, 'HS256');
     return $token;
 }
 
-
-function getToken($token)
+function checkToken($token)
 {
     $key = 'Dabo2100@IPACO';
     try {
@@ -21,3 +21,4 @@ function getToken($token)
         return false;
     }
 }
+

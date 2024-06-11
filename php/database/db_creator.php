@@ -1,6 +1,6 @@
 <?php
 // connect to the database
-require_once('./db_config.php');
+require_once './database/db_config.php';
 
 $options = [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -34,13 +34,11 @@ $statements = [
     'INSERT IGNORE INTO app_apps 
         (app_id,app_name,app_is_active) VALUES 
         (1,"Warehouse",1),
-        (2,"SB_Updater",1),
-        (3,"Connector_Check",1),
-        (4,"Zone_Check",1),
-        (5,"Users_Authority",1),
-        (6,"Retrofit_Data",1),
-        (7,"Projects",1),
-        (8,"Daily_Attendance",1)
+        (2,"Avionics",1),
+        (3,"Aircraft_forms",1),
+        (4,"Retrofit_Data",1),
+        (5,"Projects",1),
+        (6,"User Authority",1)
     ',
 
     'CREATE TABLE IF NOT EXISTS app_departments( 
@@ -51,7 +49,6 @@ $statements = [
         created_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_update        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )',
-
     'INSERT IGNORE INTO app_departments 
         (department_id,department_name,zoho_id,department_power) VALUES 
         (1,"Airframe","zcrm_6133467000000483533",5),
@@ -69,7 +66,6 @@ $statements = [
         created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_update       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )',
-
     'INSERT IGNORE INTO app_teams 
         (team_id,team_name,department_id,team_is_active) VALUES 
         (1,"Planning",4,1),
@@ -92,7 +88,6 @@ $statements = [
         created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_update       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )',
-
     'INSERT IGNORE INTO app_users 
         (user_id,user_email,user_name,user_password,user_token,user_vcode,team_id,user_is_active) VALUES 
         (1,"a_fattah_m@icloud.com","Dabo","$2y$10$7dY18c5TR8j.MTfH2fMWTe3d/1botvUYTVnyu2.Hn3PtpSzD/WzGy","eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoiMSIsInVzZXJfaXNfYWN0aXZlIjp0cnVlLCJpc19zdXBlciI6dHJ1ZX0.JPPhF9O49X0G8Jc-KhUN_42FcOHMkTN_ArBFk9VMBe4","1234",1,1)
@@ -110,7 +105,6 @@ $statements = [
         created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_update       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )',
-
     'INSERT IGNORE INTO app_user_authority 
         (log_id,user_id,app_id,role_id,is_active) VALUES 
         (1,1,1,1,1),
@@ -118,9 +112,7 @@ $statements = [
         (3,1,3,1,1),
         (4,1,4,1,1),
         (5,1,5,1,1),
-        (6,1,6,1,1),
-        (7,1,7,1,1),
-        (8,1,8,1,1)
+        (6,1,6,1,1)
     ',
 
     'CREATE TABLE IF NOT EXISTS form_types( 
@@ -130,7 +122,6 @@ $statements = [
         created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_update       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )',
-
     'INSERT IGNORE INTO form_types 
         (type_id,type_name,is_active) VALUES 
         (1,"Form 1001",1),
@@ -301,7 +292,6 @@ $statements = [
         last_update         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )',
 
-
     'CREATE TABLE IF NOT EXISTS connector_types( 
         type_id             INT(20) AUTO_INCREMENT PRIMARY KEY,
         type_name           VARCHAR(255),
@@ -309,7 +299,6 @@ $statements = [
         last_update         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         UNIQUE (type_name)
     )',
-
     'INSERT IGNORE INTO connector_types 
         (type_id,type_name) VALUES 
         (1,"Cable Assembly"),
@@ -360,93 +349,76 @@ $statements = [
         last_update         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )',
 
-    // 'CREATE TABLE IF NOT EXISTS logs_3( 
-    //     log_id              INT(20) AUTO_INCREMENT PRIMARY KEY,
-    //     parent_form_id      INT,
-    //     FOREIGN KEY (parent_form_id) REFERENCES app_forms(form_id),
-    //     work_required       VARCHAR(255) NOT NULL,
-    //     operator_code       VARCHAR(255) NOT NULL,
-    //     work_hrs            VARCHAR(255) NOT NULL,
-    //     has_operator        BOOLEAN DEFAULT TRUE,
-    //     work_done           VARCHAR(255) NOT NULL,
-    //     log_start_time      VARCHAR(255),
-    //     log_start_Date      DATE,
-    //     log_reason          VARCHAR(255),
-    //     item_desc           VARCHAR(255),
-    //     replace_item_desc   VARCHAR(255),
-    //     item_sn             VARCHAR(255),
-    //     item_pn             VARCHAR(255),
-    //     replace_item_sn     VARCHAR(255),
-    //     replace_item_pn     VARCHAR(255),
-    //     log_comments        VARCHAR(255),
-    //     inspector_id        INT,
-    //     FOREIGN KEY (inspector_id) REFERENCES app_users(user_id),
-    //     insection_date      DATE,
-    //     action_taken        VARCHAR(255) NOT NULL,
-    //     is_active           BOOLEAN DEFAULT TRUE,
-    //     created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    //     last_update         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    //     UNIQUE (parent_form_id)
-    // )',
+    // Projects App
+
+    'CREATE TABLE IF NOT EXISTS project_status( 
+        status_id               INT(20) AUTO_INCREMENT PRIMARY KEY,
+        status_name             VARCHAR(255),
+        status_color_code       VARCHAR(255),
+        created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_update             TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE (status_name)
+    )',
+
+    'INSERT IGNORE INTO project_status 
+        (status_id,status_name,status_color_code) VALUES 
+        (1,"Active","#528d64"),
+        (2,"On Hold","#fbc11e"),
+        (3,"Delayed","#e73434"),
+        (4,"Done","#2cc8ba"),
+        (5,"N/A","#b4b4b4")
+    ',
+
+    'CREATE TABLE IF NOT EXISTS app_projects( 
+        project_id              INT(20) AUTO_INCREMENT PRIMARY KEY,
+        project_name            VARCHAR(255),
+        project_status_id       INT,
+        FOREIGN KEY (project_status_id) REFERENCES project_status(status_id),
+        project_start_date      DATE,
+        project_end_date        DATE,
+        project_completion_date DATE,
+        project_duration        FLOAT DEFAULT 0,
+        created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_update             TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )',
+
+    'CREATE TABLE IF NOT EXISTS project_tasklists( 
+        tasklist_id             INT(20) AUTO_INCREMENT PRIMARY KEY,
+        tasklist_name           VARCHAR(255),
+        project_id              INT,
+        FOREIGN KEY (project_id) REFERENCES app_projects(project_id),
+        tasklist_duration       FLOAT,
+        is_template             BOOLEAN DEFAULT FALSE,
+        tasklist_start_date     DATE,
+        tasklist_end_date       DATE,
+        tasklist_status_id      INT,
+        FOREIGN KEY (tasklist_status_id) REFERENCES project_status(status_id),
+        created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_update             TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )',
+
+    'CREATE TABLE IF NOT EXISTS project_tasks( 
+        task_id                 INT(20) AUTO_INCREMENT PRIMARY KEY,
+        task_name               VARCHAR(255),
+        task_desc               VARCHAR(255),
+        task_team_id            INT,
+        FOREIGN KEY (task_team_id) REFERENCES app_teams(team_id),
+        task_order              INT(20),
+        tasklist_id             INT,
+        FOREIGN KEY (tasklist_id) REFERENCES project_tasklists(tasklist_id),
+        task_progress           FLOAT,
+        task_status_id          INT,
+        FOREIGN KEY (task_status_id) REFERENCES project_status(status_id),
+        task_duration           FLOAT,
+        task_start_date         TIMESTAMP NULL,
+        task_end_date           TIMESTAMP NULL,
+        created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_update             TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE (tasklist_id,task_order)
+    )',
 ];
+
 // execute SQL statements
 foreach ($statements as $statement) {
     $pdo->exec($statement);
 }
-
-// '
-// BEGIN
-// DECLARE aircraft_id_var INT;
-// DECLARE last_order_var INT;
-// DECLARE new_id_var INT;
-// -- Query aircraft_id into variable
-// SELECT aircraft_id INTO aircraft_id_var FROM app_forms WHERE form_id = NEW.form_id;
-
-// -- Query max form_order into variable
-// SELECT MAX(form_order) INTO last_order_var FROM app_forms WHERE form_type_id = 2 AND aircraft_id = aircraft_id_var;
-
-// -- Insert into app_forms
-// INSERT INTO app_forms (form_order, form_parent_id, form_type_id, aircraft_id, form_date)
-// VALUES (last_order_var + 1, NEW.form_id, 2, aircraft_id_var, NEW.log_date);
-
-// -- Get the last inserted ID
-// SET new_id_var = LAST_INSERT_ID();
-// SET New.1002_id = new_id_var;
-// END
-// '
-
-// '
-//     DELIMITER //
-//     CREATE TRIGGER change_product_qty
-//         BEFORE INSERT
-//         ON warehouse_qty_logs
-//         FOR EACH ROW
-//     BEGIN
-//         -- Define Vars
-//         DECLARE var_log_value FLOAT;
-//         DECLARE var_qty_id INT;
-//         DECLARE var_log_type VARCHAR(255); -- Specify the length
-//         DECLARE var_old_qty FLOAT;
-//         DECLARE var_new_qty FLOAT;
-
-//         -- Assign Values
-//         SET var_log_value = New.log_value;
-//         SET var_qty_id = New.qty_id;
-//         SET var_log_type = New.log_type;
-
-//         -- Query Old Value into var_old_qty
-//         SELECT qty_value INTO var_old_qty FROM warehouse_products_qty WHERE qty_id = var_qty_id;
-//         SET var_new_qty = var_old_qty + var_log_value;
-//         SET New.log_before_qty = var_old_qty;
-
-//         -- Update warehouse_products_qty if var_new_qty is >= 0
-//         IF var_new_qty >= 0 THEN
-//             UPDATE warehouse_products_qty SET qty_value = var_new_qty WHERE qty_id = var_qty_id;
-//         ELSE 
-//             SET New.is_active = 0;
-//         END IF;
-        
-//     END;
-//     //
-//     DELIMITER ;
-// '
