@@ -378,6 +378,8 @@ $statements = [
         project_end_date        DATE,
         project_completion_date DATE,
         project_duration        FLOAT DEFAULT 0,
+        aircraft_id             INT,
+        FOREIGN KEY (aircraft_id) REFERENCES aircrafts(aircraft_id),
         created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_update             TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )',

@@ -59,6 +59,7 @@ require "./controllers/retrofit.php";
 require "./controllers/users.php";
 require "./controllers/warehouse.php";
 require "./controllers/forms.php";
+require "./controllers/reports.php";
 
 // Use Router
 require "./assets/router.php";
