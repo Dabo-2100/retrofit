@@ -362,11 +362,15 @@ $statements = [
 
     'INSERT IGNORE INTO project_status 
         (status_id,status_name,status_color_code) VALUES 
-        (1,"Active","#528d64"),
+        (1,"On Going","#528d64"),
         (2,"On Hold","#fbc11e"),
         (3,"Delayed","#e73434"),
         (4,"Done","#2cc8ba"),
-        (5,"N/A","#b4b4b4")
+        (5,"Waiting For SB","#fbc11e"),
+        (6,"Waiting For Spare parts","#fbc11e"),
+        (7,"Waiting For Installation","#fbc11e"),
+        (8,"Waiting For Manpower","#fbc11e"),
+        (9,"Waiting For Findings","#fbc11e")
     ',
 
     'CREATE TABLE IF NOT EXISTS app_projects( 
@@ -417,6 +421,17 @@ $statements = [
         created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_update             TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         UNIQUE (tasklist_id,task_order)
+    )',
+
+    'CREATE TABLE IF NOT EXISTS task_comments( 
+        comment_id              INT(20) AUTO_INCREMENT PRIMARY KEY,
+        comment_name            VARCHAR(255),
+        author_id               INT,
+        FOREIGN KEY (author_id) REFERENCES app_users(user_id),
+        task_id                 INT,
+        FOREIGN KEY (task_id) REFERENCES project_tasks(task_id),
+        created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_update             TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )',
 ];
 

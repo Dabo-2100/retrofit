@@ -13,6 +13,7 @@ $endpoints += [
     '/api/tasklists/istemplate' => 'index_templates',
     '/api/tasks/store' => 'store_task',
     '/api/sb_tasks' => 'index_sbtasks',
+    '/api/tasks/\d+/comments' => 'index_comments',
 ];
 
 function index_status()
@@ -214,7 +215,12 @@ function index_tasks($id)
                 $user_info = json_decode(checkToken($accessToken), true);
                 if ($user_info) {
                     try {
-                        $sql = "SELECT * FROM project_tasks WHERE tasklist_id =:tasklist_id";
+                        $sql = "
+                        SELECT *,
+                        (SELECT COUNT(*) FROM task_comments WHERE task_id = `project_tasks`.`task_id`) AS comment_count 
+                        FROM project_tasks 
+                        WHERE tasklist_id =:tasklist_id
+                        ";
                         $statement = $pdo->prepare($sql);
                         $statement->bindParam(':tasklist_id', $tasklist_id);
                         $statement->execute();
@@ -248,7 +254,7 @@ function index_tasks($id)
         }
     } elseif ($method === "POST") {
         try {
-            $sql = "SELECT * FROM project_tasks WHERE tasklist_id =:tasklist_id and  task_status_id=:task_status_id";
+            $sql = "SELECT *,(SELECT COUNT(*) FROM task_comments WHERE task_id = `project_tasks`.`task_id`) AS comment_count  FROM project_tasks WHERE tasklist_id =:tasklist_id and  task_status_id=:task_status_id";
             $statement = $pdo->prepare($sql);
             $statement->bindParam(':tasklist_id', $tasklist_id);
             $statement->bindParam(':task_status_id', $POST_data['task_status_id']);
@@ -464,6 +470,82 @@ function index_templates()
         } else {
             http_response_code(401); // Unauthorized
             echo "Error : 401 | Unauthorized";
+        }
+    } else {
+        echo 'Method Not Allowed';
+    }
+}
+
+function index_comments($id)
+{
+    $task_id = explode("/comments", explode("api/tasks/", $id[0])[1])[0];
+    global $pdo, $response, $method, $POST_data;
+    if ($method === "GET") {
+        if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            $headerParts = explode(' ', $_SERVER['HTTP_AUTHORIZATION']);
+            if (count($headerParts) == 2 && $headerParts[0] == 'Bearer') {
+                $accessToken = $headerParts[1];
+                $user_info = json_decode(checkToken($accessToken), true);
+                if ($user_info) {
+                    try {
+                        $sql = "SELECT * FROM task_comments WHERE task_id =:task_id ORDER BY created_at";
+                        $statement = $pdo->prepare($sql);
+                        $statement->bindParam(':task_id', $task_id);
+                        $statement->execute();
+                        $data = [];
+                        if ($statement->rowCount() > 0) {
+                            while ($el = $statement->fetch(PDO::FETCH_ASSOC)) {
+                                array_push($data, $el);
+                            }
+                            $response['err'] = false;
+                            $response['msg'] = "All Comments are ready to view !";
+                            $response['data'] = $data;
+                        } else {
+                            $response['msg'] = "There are no Comments found !";
+                        }
+                    } catch (Exception $e) {
+                        $response['msg'] = "An error occurred: " . $e->getMessage();
+                    }
+                } else {
+                    $response['msg'] = "Invaild user token !";
+                }
+                echo json_encode($response, true);
+            } else {
+                http_response_code(400);
+                echo "Error : 400 | Bad Request";
+            }
+        } else {
+            http_response_code(401); // Unauthorized
+            echo "Error : 401 | Unauthorized";
+        }
+    } elseif ($method === "POST") {
+        try {
+            $sql = "
+            SELECT * FROM project_tasklists 
+            WHERE project_id = :project_id 
+            AND tasklist_name LIKE :tasklist_name 
+            ORDER BY tasklist_start_date";
+            $tasklist_name = '%' . $POST_data['contains'] . '%';
+            $statement = $pdo->prepare($sql);
+            $statement->bindParam(':project_id', $project_id, PDO::PARAM_INT);
+            $statement->bindParam(':tasklist_name', $tasklist_name, PDO::PARAM_STR);
+            $statement->execute();
+            $data = [];
+            if ($statement->rowCount() > 0) {
+                while ($el = $statement->fetch(PDO::FETCH_ASSOC)) {
+                    $el['tasklist_status_name'] = getOneField("project_status", "status_name", "status_id = " . $el['tasklist_status_id']);
+                    $el['tasklist_progress'] = getTaskListProgress($el['tasklist_id']);
+                    array_push($data, $el);
+                }
+                $response['err'] = false;
+                $response['msg'] = "All Tasklists are ready to view !";
+                $response['data'] = $data;
+            } else {
+                $response['msg'] = "There are no Tasklists found !";
+            }
+            echo json_encode($response, true);
+        } catch (Exception $e) {
+            $response['msg'] = "An error occurred: " . $e->getMessage();
         }
     } else {
         echo 'Method Not Allowed';

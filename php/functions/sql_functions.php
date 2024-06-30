@@ -101,7 +101,6 @@ function insert_data()
                     $FieldsStr = "";
                     $ValuesStr = "";
                     foreach ($Fields as $index => $value) {
-
                         $FieldsStr .= "$value";
                         if (count($Fields) - 1 != $index) {
                             $FieldsStr .= ",";
