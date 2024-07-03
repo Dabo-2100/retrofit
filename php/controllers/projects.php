@@ -354,6 +354,34 @@ function getTaskListProgress($tasklist_id)
     }
 }
 
+function getTaskListActualDuration($tasklist_id)
+{
+    global $pdo;
+    try {
+        $sql = "
+            SELECT * , (SELECT tasklist_duration FROM project_tasklists WHERE tasklist_id = $tasklist_id) FROM project_tasks WHERE tasklist_id = $tasklist_id;
+        ";
+        $statement = $pdo->prepare($sql);
+        // $statement->bindParam(':tasklist_id', $tasklist_id);
+        $statement->execute();
+        $tasklist_actual_duration = 0;
+        if ($statement->rowCount() > 0) {
+            while ($el = $statement->fetch(PDO::FETCH_ASSOC)) {
+                if ($el['actual_duration'] != 0) {
+                    $tasklist_actual_duration += $el['actual_duration'];
+                } else {
+                    if ($el['task_status_id'] == 4) {
+                        $tasklist_actual_duration += $el['task_duration'];
+                    }
+                }
+            }
+        }
+        return $tasklist_actual_duration;
+    } catch (Exception $e) {
+        echo $e->getMessage();
+    }
+}
+
 function index_sbtasks()
 {
     global $pdo, $response, $method;

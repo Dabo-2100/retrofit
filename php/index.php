@@ -60,6 +60,7 @@ require "./controllers/users.php";
 require "./controllers/warehouse.php";
 require "./controllers/forms.php";
 require "./controllers/reports.php";
+require "./controllers/kpi.php";
 
 // Use Router
 require "./assets/router.php";

@@ -416,6 +416,7 @@ $statements = [
         task_status_id          INT,
         FOREIGN KEY (task_status_id) REFERENCES project_status(status_id),
         task_duration           FLOAT,
+        actual_duration         FLOAT,
         task_start_date         TIMESTAMP NULL,
         task_end_date           TIMESTAMP NULL,
         created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

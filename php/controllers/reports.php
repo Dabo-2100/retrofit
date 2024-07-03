@@ -20,6 +20,11 @@ function report_1($id)
             while ($el = $statement->fetch(PDO::FETCH_ASSOC)) {
                 $part_id = $el['sb_part_id'];
                 $part_name = getOneField("sb_parts", "part_name", "part_id = $part_id");
+                $sb_name = explode(" | ", $part_name)[0];
+                $sb_desc = getOneField("sbs", "sb_name", "sb_no = '$sb_name'");
+                $issued_duration = getOneField("sb_parts", "issued_duration", "part_id = $part_id");
+                // echo $sb_desc;
+                // echo explode(" | ", $part_name)[0]."<br>";
                 $template_s_id = getOneField("project_tasklists", "tasklist_id", "is_template = 1 AND tasklist_name = '$part_name [ Structure ]'");
                 $template_a_id = getOneField("project_tasklists", "tasklist_id", "is_template = 1 AND tasklist_name = '$part_name [ Avionics ]'");
                 $structure_duration = $avionics_duration = 0;
@@ -44,16 +49,18 @@ function report_1($id)
                 }
 
                 $Row = [
+                    'aircraft_sn' => $aircraft_SN,
                     'template_s_id' => $template_s_id,
                     'template_a_id' => $template_a_id,
-                    'sb_no' => explode(" | ", $part_name)[0],
+                    'sb_no' => explode("|", $part_name)[0],
+                    'sb_desc' => $sb_desc,
+                    'issued_duration' => $issued_duration,
                     'sb_part_name' => $part_name,
                     'structure_duration' => $structure_duration,
                     'avionics_duration' => $avionics_duration,
                     'total_duration' => $structure_duration + $avionics_duration,
                     'done_duration_s' => $recorded_s_duration,
                     'done_duration_a' => $recorded_a_duration,
-
                 ];
                 array_push($data, $Row);
             }
