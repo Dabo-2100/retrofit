@@ -12,6 +12,7 @@ $endpoints += [
     '/api/tasklists/\d+/tasks' => 'index_tasks',
     '/api/tasklists/istemplate' => 'index_templates',
     '/api/tasks/store' => 'store_task',
+    '/api/tasks/\d+/switch' => 'switch_task',
     '/api/sb_tasks' => 'index_sbtasks',
     '/api/tasks/\d+/comments' => 'index_comments',
 ];
@@ -220,6 +221,7 @@ function index_tasks($id)
                         (SELECT COUNT(*) FROM task_comments WHERE task_id = `project_tasks`.`task_id`) AS comment_count 
                         FROM project_tasks 
                         WHERE tasklist_id =:tasklist_id
+                        ORDER BY task_order
                         ";
                         $statement = $pdo->prepare($sql);
                         $statement->bindParam(':tasklist_id', $tasklist_id);
@@ -254,7 +256,7 @@ function index_tasks($id)
         }
     } elseif ($method === "POST") {
         try {
-            $sql = "SELECT *,(SELECT COUNT(*) FROM task_comments WHERE task_id = `project_tasks`.`task_id`) AS comment_count  FROM project_tasks WHERE tasklist_id =:tasklist_id and  task_status_id=:task_status_id";
+            $sql = "SELECT *,(SELECT COUNT(*) FROM task_comments WHERE task_id = `project_tasks`.`task_id`) AS comment_count FROM project_tasks WHERE tasklist_id =:tasklist_id and  task_status_id=:task_status_id";
             $statement = $pdo->prepare($sql);
             $statement->bindParam(':tasklist_id', $tasklist_id);
             $statement->bindParam(':task_status_id', $POST_data['task_status_id']);
@@ -577,5 +579,128 @@ function index_comments($id)
         }
     } else {
         echo 'Method Not Allowed';
+    }
+}
+
+
+
+function switch_task($id)
+{
+    global $pdo, $response, $method;
+    $task_id = explode("/switch", explode("tasks/", $id[0])[1])[0];
+    if ($method === "POST") {
+        if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            $headerParts = explode(' ', $_SERVER['HTTP_AUTHORIZATION']);
+            if (count($headerParts) == 2 && $headerParts[0] == 'Bearer') {
+                $accessToken = $headerParts[1];
+                $user_info = json_decode(checkToken($accessToken), true);
+                if ($user_info) {
+                    $task_name      = getOneField("project_tasks", "task_name", "task_id = $task_id");
+                    $task_desc      = getOneField("project_tasks", "task_desc", "task_id = $task_id");
+                    $task_duration  = getOneField("project_tasks", "task_duration", "task_id = $task_id");
+                    $tasklist_id    = getOneField("project_tasks", "tasklist_id", "task_id = $task_id");
+                    $tasklist_name  = getOneField("project_tasklists", "tasklist_name", "tasklist_id = $tasklist_id");
+                    $template_tasklist_id = getOneField("project_tasklists", "tasklist_id", "tasklist_name = '$tasklist_name' and is_template = true");
+                    $new_tasklist_name  = null;
+                    if (strpos($tasklist_name, "Structure")) {
+                        $new_tasklist_name = str_replace("Structure", "Avionics", $tasklist_name);
+                    } else {
+                        $new_tasklist_name = str_replace("Avionics", "Structure", $tasklist_name);
+                    }
+                    $project_id = getOneField("project_tasklists", "project_id", "tasklist_id = $tasklist_id");
+                    $new_tasklist_id = getOneField("project_tasklists", "tasklist_id", "tasklist_name = '$new_tasklist_name' and project_id = $project_id");
+                    $new_template_id = getOneField("project_tasklists", "tasklist_id", "tasklist_name = '$new_tasklist_name' and is_template = true");
+                    try {
+                        if (is_null($new_tasklist_id) != 1) {
+                            $sql = "INSERT INTO project_tasks (task_name,task_desc,task_duration,tasklist_id,task_status_id) 
+                                VALUES ('$task_name', '$task_desc', $task_duration ,$new_tasklist_id, 1)";
+                            $statement = $pdo->prepare($sql);
+                            $statement->execute();
+
+                            $sql2 = "UPDATE project_tasks SET
+                                level_1 = IF(LENGTH(task_name) - LENGTH(REPLACE(task_name, '.', '')) >= 0, CAST(SUBSTRING_INDEX(task_name, '.', 1) AS UNSIGNED), NULL),
+                                level_2 = IF(LENGTH(task_name) - LENGTH(REPLACE(task_name, '.', '')) >= 1, CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(task_name, '.', 2), '.', -1) AS UNSIGNED), NULL),
+                                level_3 = IF(LENGTH(task_name) - LENGTH(REPLACE(task_name, '.', '')) >= 2, CAST(SUBSTRING_INDEX(task_name, '.', -1) AS UNSIGNED), NULL)
+                                WHERE tasklist_id = '$new_tasklist_id'    
+                            ";
+                            $statement2 = $pdo->prepare($sql2);
+                            $statement2->execute();
+                        }
+
+                        if (is_null($new_template_id) != 1) {
+                            $sql = "INSERT INTO project_tasks (task_name,task_desc,task_duration,tasklist_id,task_status_id) 
+                                VALUES ('$task_name', '$task_desc', $task_duration ,$new_template_id, 1)";
+                            $statement = $pdo->prepare($sql);
+                            $statement->execute();
+                            $sql2 = "UPDATE project_tasks SET
+                                level_1 = IF(LENGTH(task_name) - LENGTH(REPLACE(task_name, '.', '')) >= 0, CAST(SUBSTRING_INDEX(task_name, '.', 1) AS UNSIGNED), NULL),
+                                level_2 = IF(LENGTH(task_name) - LENGTH(REPLACE(task_name, '.', '')) >= 1, CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(task_name, '.', 2), '.', -1) AS UNSIGNED), NULL),
+                                level_3 = IF(LENGTH(task_name) - LENGTH(REPLACE(task_name, '.', '')) >= 2, CAST(SUBSTRING_INDEX(task_name, '.', -1) AS UNSIGNED), NULL)
+                                WHERE tasklist_id = '$new_template_id'
+                                ";
+                            $statement2 = $pdo->prepare($sql2);
+                            $statement2->execute();
+                        }
+
+                        $sql2 = "DELETE FROM project_tasks WHERE task_id = :task_id";
+                        $statement2 = $pdo->prepare($sql2);
+                        $statement2->bindParam(':task_id', $task_id);
+                        $statement2->execute();
+
+                        $sql2 = "DELETE FROM project_tasks WHERE tasklist_id = :template_tasklist_id AND task_name = :task_name";
+                        $statement2 = $pdo->prepare($sql2);
+                        $statement2->bindParam(':template_tasklist_id', $template_tasklist_id);
+                        $statement2->bindParam(':task_name', $task_name);
+                        $statement2->execute();
+
+                        reOrderFromTasklist($tasklist_id);
+                        reOrderFromTasklist($new_tasklist_id);
+                        reOrderFromTasklist($template_tasklist_id);
+                        reOrderFromTasklist($new_template_id);
+
+                        $response['err'] = false;
+                        $response['msg'] = "Task Change Department Succesfuly !";
+                    } catch (Exception $e) {
+                        // echo "Error Happend";
+                    }
+                } else {
+                    $response['msg'] = "Invaild user token !";
+                }
+                echo json_encode($response, true);
+            } else {
+                http_response_code(400);
+                echo "Error : 400 | Bad Request";
+            }
+        } else {
+            http_response_code(401); // Unauthorized
+            echo "Error : 401 | Unauthorized";
+        }
+    } else {
+        echo 'Method Not Allowed';
+    }
+};
+
+
+
+function reOrderFromTasklist($tasklist_id)
+{
+    global $pdo;
+    if (is_null($tasklist_id) != 1) {
+        $sql = "SELECT task_id,task_name FROM project_tasks WHERE tasklist_id = $tasklist_id ORDER BY level_1,level_2,level_3";
+        $statement0 = $pdo->prepare($sql);
+        $statement0->execute();
+        if ($statement0->rowCount() > 0) {
+            $index = 0;
+            while ($el = $statement0->fetch(PDO::FETCH_ASSOC)) {
+                $new = $index + 1;
+                $task_name = $el['task_name'];
+                $sql3 = "UPDATE project_tasks SET task_order = $new 
+                WHERE task_name = '$task_name' AND tasklist_id = $tasklist_id";
+                $statement3 = $pdo->prepare($sql3);
+                $statement3->execute();
+                $index = $new;
+                echo $index;
+            }
+        }
     }
 }
