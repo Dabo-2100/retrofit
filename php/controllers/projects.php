@@ -15,6 +15,7 @@ $endpoints += [
     '/api/tasks/\d+/switch' => 'switch_task',
     '/api/sb_tasks' => 'index_sbtasks',
     '/api/tasks/\d+/comments' => 'index_comments',
+    '/api/tasks/\d+/redescr' => 'update_desc',
 ];
 
 function index_status()
@@ -702,5 +703,79 @@ function reOrderFromTasklist($tasklist_id)
                 echo $index;
             }
         }
+    }
+}
+
+
+function update_desc($id)
+{
+    global $pdo, $response, $POST_data, $method;
+    $task_id = explode("/redesc", explode("tasks/", $id[0])[1])[0];
+    $field = 'task_desc';
+    $new_desc = $POST_data['task_desc'];
+    if (is_null($new_desc) == 1) {
+        $new_desc = $POST_data['task_name'];
+        $field  = 'task_name';
+    }
+    if ($method === "POST") {
+        if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            $headerParts = explode(' ', $_SERVER['HTTP_AUTHORIZATION']);
+            if (count($headerParts) == 2 && $headerParts[0] == 'Bearer') {
+                $accessToken = $headerParts[1];
+                $user_info = json_decode(checkToken($accessToken), true);
+                if ($user_info) {
+                    $task_name      = getOneField("project_tasks", "task_name", "task_id = $task_id");
+                    $tasklist_id    = getOneField("project_tasks", "tasklist_id", "task_id = $task_id");
+                    $tasklist_name  = getOneField("project_tasklists", "tasklist_name", "tasklist_id = $tasklist_id");
+                    $template_tasklist_id = getOneField("project_tasklists", "tasklist_id", "tasklist_name = '$tasklist_name' and is_template = true");
+                    try {
+                        $sql = "UPDATE project_tasks SET $field = '$new_desc' WHERE task_id = '$task_id'";
+                        $statement = $pdo->prepare($sql);
+                        $statement->execute();
+
+                        $sql2 = "UPDATE project_tasks SET $field = '$new_desc' WHERE tasklist_id = '$template_tasklist_id' AND task_name = '$task_name'";
+                        $statement2 = $pdo->prepare($sql2);
+                        $statement2->execute();
+
+                        if ($field == "task_name") {
+                            $sql2 = "UPDATE project_tasks SET
+                                level_1 = IF(LENGTH(task_name) - LENGTH(REPLACE(task_name, '.', '')) >= 0, CAST(SUBSTRING_INDEX(task_name, '.', 1) AS UNSIGNED), NULL),
+                                level_2 = IF(LENGTH(task_name) - LENGTH(REPLACE(task_name, '.', '')) >= 1, CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(task_name, '.', 2), '.', -1) AS UNSIGNED), NULL),
+                                level_3 = IF(LENGTH(task_name) - LENGTH(REPLACE(task_name, '.', '')) >= 2, CAST(SUBSTRING_INDEX(task_name, '.', -1) AS UNSIGNED), NULL)
+                                WHERE tasklist_id = '$tasklist_id'";
+                            $statement2 = $pdo->prepare($sql2);
+                            $statement2->execute();
+
+                            $sql2 = "UPDATE project_tasks SET
+                                level_1 = IF(LENGTH(task_name) - LENGTH(REPLACE(task_name, '.', '')) >= 0, CAST(SUBSTRING_INDEX(task_name, '.', 1) AS UNSIGNED), NULL),
+                                level_2 = IF(LENGTH(task_name) - LENGTH(REPLACE(task_name, '.', '')) >= 1, CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(task_name, '.', 2), '.', -1) AS UNSIGNED), NULL),
+                                level_3 = IF(LENGTH(task_name) - LENGTH(REPLACE(task_name, '.', '')) >= 2, CAST(SUBSTRING_INDEX(task_name, '.', -1) AS UNSIGNED), NULL)
+                                WHERE tasklist_id = '$template_tasklist_id'";
+                            $statement2 = $pdo->prepare($sql2);
+                            $statement2->execute();
+
+                            reOrderFromTasklist($tasklist_id);
+                            reOrderFromTasklist($template_tasklist_id);
+                        }
+
+                        $response['err'] = false;
+                        $response['msg'] = "Task desc updated Succesfuly !";
+                    } catch (Exception $e) {
+                        // echo "Error Happend";
+                    }
+                } else {
+                    $response['msg'] = "Invaild user token !";
+                }
+                echo json_encode($response, true);
+            } else {
+                http_response_code(400);
+                echo "Error : 400 | Bad Request";
+            }
+        } else {
+            http_response_code(401); // Unauthorized
+            echo "Error : 401 | Unauthorized";
+        }
+    } else {
+        echo 'Method Not Allowed';
     }
 }
