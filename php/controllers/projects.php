@@ -6,6 +6,7 @@ $endpoints += [
     '/api/projects/store' => 'store_project',
     '/api/projects/delete' => 'delete_project',
     '/api/projects/status' => 'index_status',
+    '/api/projects/commenttypes' => 'index_types',
     '/api/projects/teams' => 'index_teams',
     '/api/projects/\d+/tasklists' => 'index_tasklists',
     '/api/projects/\d+/tasklists/\d+/tasks' => 'index_tasks',
@@ -40,6 +41,50 @@ function index_status()
                             }
                             $response['err'] = false;
                             $response['msg'] = "All Status are ready to view !";
+                            $response['data'] = $data;
+                        } else {
+                            $response['msg'] = "There are no Status found !";
+                        }
+                    } catch (Exception $e) {
+                        $response['msg'] = "An error occurred: " . $e->getMessage();
+                    }
+                } else {
+                    $response['msg'] = "Invaild user token !";
+                }
+                echo json_encode($response, true);
+            } else {
+                http_response_code(400);
+                echo "Error : 400 | Bad Request";
+            }
+        } else {
+            http_response_code(401); // Unauthorized
+            echo "Error : 401 | Unauthorized";
+        }
+    } else {
+        echo 'Method Not Allowed';
+    }
+}
+function index_types()
+{
+    global $pdo, $response, $method;
+    if ($method === "GET") {
+        if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            $headerParts = explode(' ', $_SERVER['HTTP_AUTHORIZATION']);
+            if (count($headerParts) == 2 && $headerParts[0] == 'Bearer') {
+                $accessToken = $headerParts[1];
+                $user_info = json_decode(checkToken($accessToken), true);
+                if ($user_info) {
+                    try {
+                        $sql = "SELECT * FROM comment_types";
+                        $statement = $pdo->prepare($sql);
+                        $statement->execute();
+                        $data = [];
+                        if ($statement->rowCount() > 0) {
+                            while ($el = $statement->fetch(PDO::FETCH_ASSOC)) {
+                                array_push($data, $el);
+                            }
+                            $response['err'] = false;
+                            $response['msg'] = "All Comments are ready to view !";
                             $response['data'] = $data;
                         } else {
                             $response['msg'] = "There are no Status found !";
@@ -526,6 +571,11 @@ function index_comments($id)
                         $data = [];
                         if ($statement->rowCount() > 0) {
                             while ($el = $statement->fetch(PDO::FETCH_ASSOC)) {
+                                $type_id =  $el['comment_type_id'];
+                                if (is_null($type_id) == 1) {
+                                    $type_id = 1;
+                                }
+                                $el['comment_type_name'] = getOneField("comment_types", "type_name", "type_id= $type_id ");
                                 array_push($data, $el);
                             }
                             $response['err'] = false;
@@ -582,8 +632,6 @@ function index_comments($id)
         echo 'Method Not Allowed';
     }
 }
-
-
 
 function switch_task($id)
 {

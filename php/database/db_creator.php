@@ -362,7 +362,7 @@ $statements = [
 
     'INSERT IGNORE INTO project_status 
         (status_id,status_name,status_color_code) VALUES 
-        (1,"On Going","#528d64"),
+        (1,"On Going","#00b050"),
         (2,"On Hold","#fbc11e"),
         (3,"Delayed","#e73434"),
         (4,"Done","#2cc8ba"),
@@ -431,9 +431,33 @@ $statements = [
         FOREIGN KEY (author_id) REFERENCES app_users(user_id),
         task_id                 INT,
         FOREIGN KEY (task_id) REFERENCES project_tasks(task_id),
+        related_comment         INT,
+        FOREIGN KEY (related_comment) REFERENCES task_comments(comment_id),
+        comment_type_id         INT,
+        FOREIGN KEY (comment_type_id) REFERENCES comment_types(type_id),
         created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_update             TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )',
+
+    'CREATE TABLE IF NOT EXISTS comment_types( 
+        type_id              INT(20) AUTO_INCREMENT PRIMARY KEY,
+        type_name            VARCHAR(255),
+        created_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_update          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )',
+
+    'INSERT IGNORE INTO comment_types 
+        (type_id,type_name) VALUES 
+        (1,"Email Request"),
+        (2,"Email Response"),
+        (3,"Spare Part Request"),
+        (4,"Spare Part Arrived"),
+        (5,"Waiting For SB"),
+        (6,"Found Embeded"),
+        (7,"N/A"),
+        (8,"Tools Not Found"),
+        (9,"Tools Arrived")
+    ',
 ];
 
 // execute SQL statements

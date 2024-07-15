@@ -58,6 +58,9 @@ function update_data()
                             $updates[] = "$column = '$defalutPass'";
                         } else {
                             $value = htmlspecialchars($value);
+                            if (is_null($value) == 1) {
+                                $value = NULL;
+                            }
                             $updates[] = "$column = '$value'";
                         }
                     }
